@@ -77,7 +77,7 @@ class CR3BP(object):
         rel_error = np.zeros(np.size(t))
 
         for i in range(np.size(t)):
-            C[i] = -np.linalg.norm(state[i, 3:])**2 - 2 * self.potential(state[i, 0], state[i, 1], state[i, 2])
+            C[i] = np.linalg.norm(state[i, 3:])**2 - 2 * self.potential(state[i, 0], state[i, 1], state[i, 2])
         
         rel_error = (C - C[0]) / C[0]
             
