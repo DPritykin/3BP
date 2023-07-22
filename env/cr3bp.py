@@ -6,9 +6,10 @@ from scipy.optimize import fsolve
 class Parameters(object):
     pass
 
+
 const = Parameters()
 
-const.G = 6.67430 # N m^2 / kg^2 -  universal gravitational constant
+const.G = 6.67430  # N m^2 / kg^2 -  universal gravitational constant
 const.c = 299792.458 # km/s      - speed of light
 const.au = 149597870.700 # km    - astronomical unit
 
@@ -28,7 +29,7 @@ const.Moon_GM     = 4902.800066
 
 class CR3BP(object):
     
-    def __init__(self, type='EM'):        
+    def __init__(self, type):
         if type=='EM': #Earth-Moon
             self.Mp = const.Earth_GM / const.G  # Earth   index "p" stands for the primary body
             self.Ms = const.Moon_GM / const.G   # Moon    index "s" stands for the secondary body
@@ -41,15 +42,15 @@ class CR3BP(object):
             raise Exception('Unknown 3BP configuration')
             
         self.mu = self.Ms / (self.Ms + self.Mp)
-        self.Rs = self.a * (1. - self.mu) 
+        self.Rs = self.a * (1. - self.mu)
         self.Rp = self.a * self.mu
         self.mean_motion = np.sqrt(const.G * (self.Ms + self.Mp) / (self.a)**3)
 
 
     def get_L1_quintic(self):
         def quintic_L1(x):
-            return x**5 - (3. - self.mu) * x**4 + (3. - 2. * self.mu) * x**3 - self.mu * x**2 + 2. * self.mu * x - self.mu        
-        
+            return x**5 - (3. - self.mu) * x**4 + (3. - 2. * self.mu) * x**3 - self.mu * x**2 + 2. * self.mu * x - self.mu
+
         root = fsolve(quintic_L1, (1. - self.mu) / 2., xtol=1e-10)
         return root[0]
 
@@ -57,7 +58,7 @@ class CR3BP(object):
     def get_L2_quintic(self):
         def quintic_L2(x):
             return x - (1. - self.mu) / (x + self.mu)**2 - self.mu / (x - 1. + self.mu)**2
-        
+
         root = fsolve(quintic_L2, 1 + self.mu, xtol=1e-10)
         return root[0]
 
@@ -67,8 +68,8 @@ class CR3BP(object):
         r20 = [x + self.mu - 1, y, z]
         r1 = np.linalg.norm(r10)
         r2 = np.linalg.norm(r20)
-            
-        return -0.5 * ((1 - self.mu) * (r1**2) + self.mu * (r2**2)) - (1 - self.mu) / r1 - self.mu / r2       
+
+        return -0.5 * ((1 - self.mu) * (r1**2) + self.mu * (r2**2)) - (1 - self.mu) / r1 - self.mu / r2
 
 
     def get_jacobi_const(self, t, state):
@@ -78,9 +79,9 @@ class CR3BP(object):
 
         for i in range(np.size(t)):
             C[i] = np.linalg.norm(state[i, 3:])**2 - 2 * self.potential(state[i, 0], state[i, 1], state[i, 2])
-        
+
         rel_error = (C - C[0]) / C[0]
-            
+
         return C, rel_error
 
 
@@ -91,16 +92,16 @@ class CR3BP(object):
         v_x = state[3]
         v_y = state[4]
         v_z = state[5]
-    
+
         r10 = [x + self.mu, y, z]
         r20 = [x + self.mu - 1, y, z]
-        
+
         r1 = np.linalg.norm(r10)
         r2 = np.linalg.norm(r20)
-        
-        r13 = r1**3        
+
+        r13 = r1**3
         r23 = r2**3
-    
+
         dxdt = np.zeros(6)
         dxdt[:3] = [v_x, v_y, v_z]
         dxdt[3] = 2 * v_y + x - (1 - self.mu) * (x + self.mu) / r13 - self.mu * (x - 1 + self.mu) / r23
@@ -137,7 +138,7 @@ class CR3BP(object):
         return X
 
 
-def halo_R3OA(Az, system="EM", point="L2"):
+def halo_R3OA(Az, system, point):
     def lambda_eqw(lmb):
         return lmb**4 + (c2 - 2.) * lmb**2 - (c2 - 1.) * (1. + 2. * c2)       
     
@@ -256,3 +257,4 @@ def halo_R3OA(Az, system="EM", point="L2"):
     richardson.Az = Az
     
     return np.array([x0, 0, z0, 0, vy0, 0]), richardson
+
