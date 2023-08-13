@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # plt.plot_trajectory(l2_eq_traj, 'Three Bodies in Space', em3bp)
 
     _, richardson_const = cr3bp.halo_R3OA(125000, system="SE", point="L2")
-    approx_traj = cr3bp.richardson_traj(np.arange(0., 3., 0.05), richardson_const)
+    approx_traj = cr3bp.richardson_traj(np.arange(0., 3.1, 0.01), richardson_const)
     plt.plot_trajectory(approx_traj, 'Richardson Halo', em3bp)
 
     plt.mayavi_plot(approx_traj)

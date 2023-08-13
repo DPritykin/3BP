@@ -125,16 +125,16 @@ def richardson_traj(tau_1, cnst, delta_n=1):
     X = np.zeros((np.size(tau_1), 3))
     tau_1 = tau_1 * cnst.lmbda
 
-    X[:, 0] = cnst.a21 * cnst.Ax ** 2 + cnst.a22 * cnst.Az ** 2 - cnst.Ax * np.cos(tau_1 * cnst.lmbda) + \
-              (cnst.a23 * cnst.Ax ** 2 - cnst.a24 * cnst.Az ** 2) * np.cos(2. * tau_1 * cnst.lmbda) + \
-              (cnst.a31 * cnst.Ax ** 3 - cnst.a32 * cnst.Ax * cnst.Az ** 2) * np.cos(3. * tau_1 * cnst.lmbda)
+    X[:, 0] = cnst.a21 * cnst.Ax**2 + cnst.a22 * cnst.Az**2 - cnst.Ax * np.cos(tau_1) + \
+              (cnst.a23 * cnst.Ax**2 - cnst.a24 * cnst.Az**2) * np.cos(2. * tau_1) + \
+              (cnst.a31 * cnst.Ax**3 - cnst.a32 * cnst.Ax * cnst.Az**2) * np.cos(3. * tau_1)
 
-    X[:, 1] = cnst.k * cnst.Ax * (np.sin(tau_1 * cnst.lmbda)) + \
-              (cnst.b21 * cnst.Ax ** 2 - cnst.b22 * cnst.Az ** 2) * (np.sin(2. * tau_1 * cnst.lmbda)) + \
-              (cnst.b31 * cnst.Ax ** 3 - cnst.b32 * cnst.Ax * cnst.Az ** 2) * np.sin(3. * tau_1 * cnst.lmbda)
+    X[:, 1] = cnst.k * cnst.Ax * (np.sin(tau_1)) + \
+              (cnst.b21 * cnst.Ax**2 - cnst.b22 * cnst.Az**2) * np.sin(2. * tau_1) + \
+              (cnst.b31 * cnst.Ax**3 - cnst.b32 * cnst.Ax * cnst.Az**2) * np.sin(3. * tau_1)
 
-    X[:, 2] = delta_n * (cnst.Az * np.cos(tau_1) + cnst.d21 * cnst.Ax * cnst.Az * (np.cos(2. * tau_1 * cnst.lmbda) - 3.) + \
-                        (cnst.d32 * cnst.Az * cnst.Ax ** 2 - cnst.d31 * cnst.Az ** 3) * np.cos(3. * tau_1 * cnst.lmbda))
+    X[:, 2] = delta_n * (cnst.Az * np.cos(tau_1) + cnst.d21 * cnst.Ax * cnst.Az * (np.cos(2. * tau_1) - 3.) + \
+                        (cnst.d32 * cnst.Az * cnst.Ax**2 - cnst.d31 * cnst.Az**3) * np.cos(3. * tau_1))
 
     return X
 
