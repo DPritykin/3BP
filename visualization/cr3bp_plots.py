@@ -12,10 +12,10 @@ def plot_trajectory(trajectory, caption, cr3bp_obj):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
-    ax.scatter(trajectory[:, 0] * cr3bp_obj.a, trajectory[:, 1] * cr3bp_obj.a, trajectory[:, 2] * cr3bp_obj.a,
-               color='r', marker='.', label='L2')
-    ax.scatter(-cr3bp_obj.Rp, 0, 0, color='g', marker='o', label=cr3bp_obj.primary_name)
-    ax.scatter(cr3bp_obj.Rs, 0, 0, color='b', marker='.', label=cr3bp_obj.secondary_name)
+    ax.scatter(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2],
+               color='r', marker='.', label='SC')
+    ax.scatter(-cr3bp_obj.Rp, 0, 0, color='g', s=100, marker='o', label=cr3bp_obj.primary_name)
+    ax.scatter(cr3bp_obj.Rs, 0, 0, color='b', s=50, marker='o', label=cr3bp_obj.secondary_name)
     ax.legend()
     plt.show()
 

@@ -14,8 +14,12 @@ if __name__ == '__main__':
     # l2_eq_traj = em3bp.integrate([l2_x, 0., 0., 0., 0., 0.], np.arange(0., 10., 0.05))
     # plt.plot_trajectory(l2_eq_traj, 'Three Bodies in Space', em3bp)
 
-    _, richardson_const = cr3bp.halo_R3OA(125000, system="SE", point="L2")
-    approx_traj = cr3bp.richardson_traj(np.arange(0., 3.1, 0.01), richardson_const)
+    _, richardson_const, period = cr3bp.halo_R3OA(125000, system="SE", point="L2")
+    approx_traj = cr3bp.richardson_traj(np.arange(0., period, 0.01), richardson_const, 1.)
+
+    approx_traj[:, 0] += (1 - em3bp.mu + richardson_const.gamma_L)
+    approx_traj *= em3bp.a
+
     plt.plot_trajectory(approx_traj, 'Richardson Halo', em3bp)
 
-    plt.mayavi_plot(approx_traj)
+    # plt.mayavi_plot(approx_traj / em3bp.a)
