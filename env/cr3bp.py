@@ -141,7 +141,7 @@ def richardson_traj(tau_1, cnst, delta_n=1):
 
 def halo_R3OA(Az, system, point, n_phase=1):
     def lambda_eqw(lmb):
-        return lmb ** 4 + (c2 - 2.) * lmb ** 2 - (c2 - 1.) * (1. + 2. * c2)
+        return lmb**4 + (c2 - 2.) * lmb**2 - (c2 - 1.) * (1. + 2. * c2)
 
         # Get L points
 
@@ -151,60 +151,60 @@ def halo_R3OA(Az, system, point, n_phase=1):
     if point == "L1":
         gamma_L = (1. - tbp.mu) - tbp.get_L1_quintic()
         gamma_expr = gamma_L / (1. - gamma_L)
-        c2 = (tbp.mu + (1. - tbp.mu) * gamma_expr ** 3) / gamma_L ** 3
-        c3 = (tbp.mu - (1. - tbp.mu) * gamma_expr ** 4) / gamma_L ** 3
-        c4 = (tbp.mu + (1. - tbp.mu) * gamma_expr ** 5) / gamma_L ** 3
+        c2 = (tbp.mu + (1. - tbp.mu) * gamma_expr**3) / gamma_L**3
+        c3 = (tbp.mu - (1. - tbp.mu) * gamma_expr**4) / gamma_L**3
+        c4 = (tbp.mu + (1. - tbp.mu) * gamma_expr**5) / gamma_L**3
     elif point == "L2":
         gamma_L = tbp.get_L2_quintic() - (1. - tbp.mu)
         gamma_expr = gamma_L / (1. + gamma_L)
-        c2 = (tbp.mu + (1. - tbp.mu) * gamma_expr ** 3) / gamma_L ** 3
-        c3 = (-tbp.mu - (1. - tbp.mu) * gamma_expr ** 4) / gamma_L ** 3
-        c4 = (tbp.mu + (1. - tbp.mu) * gamma_expr ** 5) / gamma_L ** 3
+        c2 = (tbp.mu + (1. - tbp.mu) * gamma_expr**3) / gamma_L**3
+        c3 = (-tbp.mu - (1. - tbp.mu) * gamma_expr**4) / gamma_L**3
+        c4 = (tbp.mu + (1. - tbp.mu) * gamma_expr**5) / gamma_L**3
 
     unit_length = gamma_L * tbp.a
 
     root = fsolve(lambda_eqw, 1000)
     lmbda = root[(np.imag(root) == 0 and root > 0)][0]
 
-    k = 2. * lmbda / (lmbda ** 2 + 1. - c2)
+    k = 2. * lmbda / (lmbda**2 + 1. - c2)
 
-    d1 = 3. * lmbda ** 2 * (k * (6. * lmbda ** 2 - 1.) - 2. * lmbda) / k
-    d2 = 8. * lmbda ** 2 * (k * (11. * lmbda ** 2 - 1.) - 2. * lmbda) / k
+    d1 = 3. * lmbda**2 * (k * (6. * lmbda**2 - 1.) - 2. * lmbda) / k
+    d2 = 8. * lmbda**2 * (k * (11. * lmbda**2 - 1.) - 2. * lmbda) / k
 
-    a21 = 3. * c3 * (k ** 2 - 2) / 4. / (1. + 2. * c2)
+    a21 = 3. * c3 * (k**2 - 2) / 4. / (1. + 2. * c2)
     a22 = 3. * c3 / 4. / (1. + 2 * c2)
     a23 = - 3. * c3 * lmbda * (3. * k ** 3 * lmbda - 6. * k * (k - lmbda) + 4.) / (4. * k * d1)
     a24 = - 3. * c3 * lmbda * (2. + 3. * k * lmbda) / (4. * k * d1)
 
-    d21 = -c3 / 2. / lmbda ** 2
-    d31 = 3. * (4. * c3 * a24 + c4) / 64. / lmbda ** 2
-    d32 = 3. * (4. * c3 * (a23 - d21) + c4 * (4. + k ** 2)) / 64. / lmbda ** 2
+    d21 = -c3 / 2. / lmbda**2
+    d31 = 3. * (4. * c3 * a24 + c4) / 64. / lmbda**2
+    d32 = 3. * (4. * c3 * (a23 - d21) + c4 * (4. + k ** 2)) / 64. / lmbda**2
 
     b21 = -3. * c3 * lmbda * (3. * k * lmbda - 4.) / 2. / d1
     b22 = 3. * c3 * lmbda / d1
-    b31 = 3. * (8. * lmbda * (3. * c3 * (k * b21 - 2. * a23) - c4 * (2. + 3. * k ** 2)) +
-                (9. * lmbda ** 2 + 1. + 2. * c2) * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k ** 2))) / 8. / d2
+    b31 = 3. * (8. * lmbda * (3. * c3 * (k * b21 - 2. * a23) - c4 * (2. + 3. * k**2)) +
+                (9. * lmbda**2 + 1. + 2. * c2) * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k**2))) / 8. / d2
     b32 = (9. * lmbda * (c3 * (k * b22 + d21 - 2. * a24) - c4) +
-           3. * (9. * lmbda ** 2 + 1. + 2. * c2) * (4. * c3 * (k * a24 - b22) + k * c4) / 8.) / d2
+           3. * (9. * lmbda**2 + 1. + 2. * c2) * (4. * c3 * (k * a24 - b22) + k * c4) / 8.) / d2
 
-    a31 = -9. * lmbda * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k ** 2)) / 4. / d2 + \
-          (9. * lmbda ** 2 + 1. - c2) * (3. * c3 * (2. * a23 - k * b21) + c4 * (2. + 3. * k ** 2)) / 2. / d2
+    a31 = -9. * lmbda * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k**2)) / 4. / d2 + \
+          (9. * lmbda**2 + 1. - c2) * (3. * c3 * (2. * a23 - k * b21) + c4 * (2. + 3. * k**2)) / 2. / d2
     a32 = -(9. * lmbda * (4. * c3 * (k * a24 - b22) + k * c4) / 4. +
-            1.5 * (9. * lmbda ** 2 + 1. - c2) * (c3 * (k * b22 + d21 - 2. * a24) - c4)) / d2
+            1.5 * (9. * lmbda**2 + 1. - c2) * (c3 * (k * b22 + d21 - 2. * a24) - c4)) / d2
 
-    denom = 2. * lmbda * (lmbda * (1. + k ** 2) - 2. * k)
-    s1 = (1.5 * c3 * (2. * a21 * (k ** 2 - 2.) - a23 * (k ** 2 + 2.) - 2. * k * b21) -
-          3. * c4 * (3. * k ** 4 - 8 * k ** 2 + 8.) / 8.) / denom
-    s2 = (1.5 * c3 * (2. * a22 * (k ** 2 - 2.) + a24 * (k ** 2 + 2.) + 2. * k * b22 + 5. * d21) +
-          3. * c4 * (12. - k ** 2) / 8.) / denom
+    denom = 2. * lmbda * (lmbda * (1. + k**2) - 2. * k)
+    s1 = (1.5 * c3 * (2. * a21 * (k ** 2 - 2.) - a23 * (k**2 + 2.) - 2. * k * b21) -
+          3. * c4 * (3. * k**4 - 8 * k**2 + 8.) / 8.) / denom
+    s2 = (1.5 * c3 * (2. * a22 * (k**2 - 2.) + a24 * (k**2 + 2.) + 2. * k * b22 + 5. * d21) +
+          3. * c4 * (12. - k**2) / 8.) / denom
 
-    a1 = -1.5 * c3 * (2. * a21 + a23 + 5. * d21) - 3. * c4 * (12. - k ** 2) / 8.
+    a1 = -1.5 * c3 * (2. * a21 + a23 + 5. * d21) - 3. * c4 * (12. - k**2) / 8.
     a2 = 1.5 * c3 * (a24 - 2. * a22) + 9. * c4 / 8.
 
-    l1 = a1 + 2. * lmbda ** 2 * s1
-    l2 = a2 + 2. * lmbda ** 2 * s2
+    l1 = a1 + 2. * lmbda**2 * s1
+    l2 = a2 + 2. * lmbda**2 * s2
 
-    Delta = lmbda ** 2 - c2
+    Delta = lmbda**2 - c2
 
     Az /= unit_length
 
