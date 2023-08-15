@@ -120,7 +120,130 @@ class CR3BP(object):
 
         return solution.y.T
 
+    def halo_R3OA(self, Az, point, n_phase=1):
+        def lambda_eqw(lmb):
+            return lmb**4 + (c2 - 2.) * lmb**2 - (c2 - 1.) * (1. + 2. * c2)
 
+        # Get L points
+        n1 = np.sqrt(1 / self.a ** 3)  # tbp.mean_motion
+
+        if point == "L1":
+            gamma_L = (1. - self.mu) - self.get_L1_quintic()
+            gamma_expr = gamma_L / (1. - gamma_L)
+            c2 = (self.mu + (1. - self.mu) * gamma_expr**3) / gamma_L**3
+            c3 = (self.mu - (1. - self.mu) * gamma_expr**4) / gamma_L**3
+            c4 = (self.mu + (1. - self.mu) * gamma_expr**5) / gamma_L**3
+        elif point == "L2":
+            gamma_L = self.get_L2_quintic() - (1. - self.mu)
+            gamma_expr = gamma_L / (1. + gamma_L)
+            c2 = (self.mu + (1. - self.mu) * gamma_expr**3) / gamma_L**3
+            c3 = (-self.mu - (1. - self.mu) * gamma_expr**4) / gamma_L**3
+            c4 = (self.mu + (1. - self.mu) * gamma_expr**5) / gamma_L**3
+
+        unit_length = gamma_L * self.a
+
+        root = fsolve(lambda_eqw, 1000)
+        lmbda = root[(np.imag(root) == 0 and root > 0)][0]
+
+        k = 2. * lmbda / (lmbda**2 + 1. - c2)
+
+        d1 = 3. * lmbda**2 * (k * (6. * lmbda**2 - 1.) - 2. * lmbda) / k
+        d2 = 8. * lmbda**2 * (k * (11. * lmbda**2 - 1.) - 2. * lmbda) / k
+
+        a21 = 3. * c3 * (k**2 - 2) / 4. / (1. + 2. * c2)
+        a22 = 3. * c3 / 4. / (1. + 2 * c2)
+        a23 = - 3. * c3 * lmbda * (3. * k ** 3 * lmbda - 6. * k * (k - lmbda) + 4.) / (4. * k * d1)
+        a24 = - 3. * c3 * lmbda * (2. + 3. * k * lmbda) / (4. * k * d1)
+
+        d21 = -c3 / 2. / lmbda**2
+        d31 = 3. * (4. * c3 * a24 + c4) / 64. / lmbda**2
+        d32 = 3. * (4. * c3 * (a23 - d21) + c4 * (4. + k ** 2)) / 64. / lmbda**2
+
+        b21 = -3. * c3 * lmbda * (3. * k * lmbda - 4.) / 2. / d1
+        b22 = 3. * c3 * lmbda / d1
+        b31 = 3. * (8. * lmbda * (3. * c3 * (k * b21 - 2. * a23) - c4 * (2. + 3. * k**2)) +
+                   (9. * lmbda**2 + 1. + 2. * c2) * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k**2))) / 8. / d2
+        b32 = (9. * lmbda * (c3 * (k * b22 + d21 - 2. * a24) - c4) +
+              3. * (9. * lmbda**2 + 1. + 2. * c2) * (4. * c3 * (k * a24 - b22) + k * c4) / 8.) / d2
+
+        a31 = -9. * lmbda * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k**2)) / 4. / d2 + \
+              (9. * lmbda**2 + 1. - c2) * (3. * c3 * (2. * a23 - k * b21) + c4 * (2. + 3. * k**2)) / 2. / d2
+        a32 = -(9. * lmbda * (4. * c3 * (k * a24 - b22) + k * c4) / 4. +
+              1.5 * (9. * lmbda**2 + 1. - c2) * (c3 * (k * b22 + d21 - 2. * a24) - c4)) / d2
+
+        denom = 2. * lmbda * (lmbda * (1. + k**2) - 2. * k)
+        s1 = (1.5 * c3 * (2. * a21 * (k ** 2 - 2.) - a23 * (k**2 + 2.) - 2. * k * b21) -
+            3. * c4 * (3. * k**4 - 8 * k**2 + 8.) / 8.) / denom
+        s2 = (1.5 * c3 * (2. * a22 * (k**2 - 2.) + a24 * (k**2 + 2.) + 2. * k * b22 + 5. * d21) +
+            3. * c4 * (12. - k**2) / 8.) / denom
+
+        a1 = -1.5 * c3 * (2. * a21 + a23 + 5. * d21) - 3. * c4 * (12. - k**2) / 8.
+        a2 = 1.5 * c3 * (a24 - 2. * a22) + 9. * c4 / 8.
+
+        l1 = a1 + 2. * lmbda**2 * s1
+        l2 = a2 + 2. * lmbda**2 * s2
+
+        Delta = lmbda**2 - c2
+
+        Az /= unit_length
+
+        Ax = np.sqrt((-l2 * Az**2 - Delta) / l1)
+        Ay = k * Ax
+
+        omega = 1 + s1 * Ax**2 + s2 * Az**2
+        period = 2 * np.pi / omega
+
+        theta = 0.
+        delta_n = 2. - n_phase  # n_phase can be 1 or 3 (input argument)
+        tau_1 = 0. + theta  # tau_z = 0. + (theta + np.pi * n / 2) this is taken care of by delta_n
+
+        x0 = a21 * Ax**2 + a22 * Az**2 - Ax * np.cos(tau_1) + \
+            (a23 * Ax**2 - a24 * Az**2) * np.cos(2. * tau_1) + \
+            (a31 * Ax**3 - a32 * Ax * Az**2) * np.cos(3. * tau_1)
+        z0 = delta_n * (Az * np.cos(tau_1) + d21 * Ax * Az * (np.cos(2. * tau_1) - 3.) +
+                        (d32 * Az * Ax**2 - d31 * Az**3) * np.cos(3. * tau_1))
+        vy0 = k * Ax * np.cos(tau_1) + \
+            (b21 * Ax**2 - b22 * Az**2) * (2. * np.cos(2. * tau_1)) + \
+            (b31 * Ax**3 - b32 * Ax * Az**2) * 3. * np.cos(3. * tau_1)
+
+        richardson = Parameters()
+        richardson.gamma_L = gamma_L
+        richardson.lmbda = lmbda
+        richardson.k = k
+        richardson.Delta = Delta
+        richardson.c2 = c2
+        richardson.c3 = c3
+        richardson.c4 = c4
+        richardson.s1 = s1
+        richardson.s2 = s2
+        richardson.l1 = l1
+        richardson.l2 = l2
+        richardson.a1 = a1
+        richardson.a2 = a2
+        richardson.d1 = d1
+        richardson.d2 = d2
+        richardson.a21 = a21
+        richardson.a22 = a22
+        richardson.a23 = a23
+        richardson.a24 = a24
+        richardson.a31 = a31
+        richardson.a32 = a32
+        richardson.b21 = b21
+        richardson.b22 = b22
+        richardson.b31 = b31
+        richardson.b32 = b32
+        richardson.d21 = d21
+        richardson.d31 = d31
+        richardson.d32 = d32
+        richardson.Ax = Ax
+        richardson.Az = Az
+        richardson.delta_n = delta_n
+
+        return np.array([x0, 0, z0, 0, vy0, 0]), richardson, period
+
+
+# Richardson's 3rd order approximation trajectory given the time array tau_1,
+# a set of Richardson's constants, and a delta_n (\pm 1)
 def richardson_traj(tau_1, cnst, delta_n=1):
     X = np.zeros((np.size(tau_1), 3))
     tau_1 = tau_1 * cnst.lmbda
@@ -138,125 +261,3 @@ def richardson_traj(tau_1, cnst, delta_n=1):
 
     return X
 
-
-def halo_R3OA(Az, system, point, n_phase=1):
-    def lambda_eqw(lmb):
-        return lmb**4 + (c2 - 2.) * lmb**2 - (c2 - 1.) * (1. + 2. * c2)
-
-        # Get L points
-
-    tbp = CR3BP(system)
-    n1 = np.sqrt(1 / tbp.a ** 3)  # tbp.mean_motion
-
-    if point == "L1":
-        gamma_L = (1. - tbp.mu) - tbp.get_L1_quintic()
-        gamma_expr = gamma_L / (1. - gamma_L)
-        c2 = (tbp.mu + (1. - tbp.mu) * gamma_expr**3) / gamma_L**3
-        c3 = (tbp.mu - (1. - tbp.mu) * gamma_expr**4) / gamma_L**3
-        c4 = (tbp.mu + (1. - tbp.mu) * gamma_expr**5) / gamma_L**3
-    elif point == "L2":
-        gamma_L = tbp.get_L2_quintic() - (1. - tbp.mu)
-        gamma_expr = gamma_L / (1. + gamma_L)
-        c2 = (tbp.mu + (1. - tbp.mu) * gamma_expr**3) / gamma_L**3
-        c3 = (-tbp.mu - (1. - tbp.mu) * gamma_expr**4) / gamma_L**3
-        c4 = (tbp.mu + (1. - tbp.mu) * gamma_expr**5) / gamma_L**3
-
-    unit_length = gamma_L * tbp.a
-
-    root = fsolve(lambda_eqw, 1000)
-    lmbda = root[(np.imag(root) == 0 and root > 0)][0]
-
-    k = 2. * lmbda / (lmbda**2 + 1. - c2)
-
-    d1 = 3. * lmbda**2 * (k * (6. * lmbda**2 - 1.) - 2. * lmbda) / k
-    d2 = 8. * lmbda**2 * (k * (11. * lmbda**2 - 1.) - 2. * lmbda) / k
-
-    a21 = 3. * c3 * (k**2 - 2) / 4. / (1. + 2. * c2)
-    a22 = 3. * c3 / 4. / (1. + 2 * c2)
-    a23 = - 3. * c3 * lmbda * (3. * k ** 3 * lmbda - 6. * k * (k - lmbda) + 4.) / (4. * k * d1)
-    a24 = - 3. * c3 * lmbda * (2. + 3. * k * lmbda) / (4. * k * d1)
-
-    d21 = -c3 / 2. / lmbda**2
-    d31 = 3. * (4. * c3 * a24 + c4) / 64. / lmbda**2
-    d32 = 3. * (4. * c3 * (a23 - d21) + c4 * (4. + k ** 2)) / 64. / lmbda**2
-
-    b21 = -3. * c3 * lmbda * (3. * k * lmbda - 4.) / 2. / d1
-    b22 = 3. * c3 * lmbda / d1
-    b31 = 3. * (8. * lmbda * (3. * c3 * (k * b21 - 2. * a23) - c4 * (2. + 3. * k**2)) +
-                (9. * lmbda**2 + 1. + 2. * c2) * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k**2))) / 8. / d2
-    b32 = (9. * lmbda * (c3 * (k * b22 + d21 - 2. * a24) - c4) +
-           3. * (9. * lmbda**2 + 1. + 2. * c2) * (4. * c3 * (k * a24 - b22) + k * c4) / 8.) / d2
-
-    a31 = -9. * lmbda * (4. * c3 * (k * a23 - b21) + k * c4 * (4. + k**2)) / 4. / d2 + \
-          (9. * lmbda**2 + 1. - c2) * (3. * c3 * (2. * a23 - k * b21) + c4 * (2. + 3. * k**2)) / 2. / d2
-    a32 = -(9. * lmbda * (4. * c3 * (k * a24 - b22) + k * c4) / 4. +
-            1.5 * (9. * lmbda**2 + 1. - c2) * (c3 * (k * b22 + d21 - 2. * a24) - c4)) / d2
-
-    denom = 2. * lmbda * (lmbda * (1. + k**2) - 2. * k)
-    s1 = (1.5 * c3 * (2. * a21 * (k ** 2 - 2.) - a23 * (k**2 + 2.) - 2. * k * b21) -
-          3. * c4 * (3. * k**4 - 8 * k**2 + 8.) / 8.) / denom
-    s2 = (1.5 * c3 * (2. * a22 * (k**2 - 2.) + a24 * (k**2 + 2.) + 2. * k * b22 + 5. * d21) +
-          3. * c4 * (12. - k**2) / 8.) / denom
-
-    a1 = -1.5 * c3 * (2. * a21 + a23 + 5. * d21) - 3. * c4 * (12. - k**2) / 8.
-    a2 = 1.5 * c3 * (a24 - 2. * a22) + 9. * c4 / 8.
-
-    l1 = a1 + 2. * lmbda**2 * s1
-    l2 = a2 + 2. * lmbda**2 * s2
-
-    Delta = lmbda**2 - c2
-
-    Az /= unit_length
-
-    Ax = np.sqrt((-l2 * Az**2 - Delta) / l1)
-    Ay = k * Ax
-
-    omega = 1 + s1 * Ax**2 + s2 * Az**2
-    period = 2 * np.pi / lmbda / omega
-
-    theta = 0.
-    delta_n = 2. - n_phase  # n_phase can be 1 or 3 (input argument)
-    tau_1 = 0. + theta  # tau_z = 0. + (theta + np.pi * n / 2) this is taken care of by delta_n
-
-    x0 = a21 * Ax**2 + a22 * Az**2 - Ax * np.cos(tau_1) + \
-         (a23 * Ax**2 - a24 * Az**2) * np.cos(2. * tau_1) + \
-         (a31 * Ax**3 - a32 * Ax * Az**2) * np.cos(3. * tau_1)
-    z0 = delta_n * (Az * np.cos(tau_1) + d21 * Ax * Az * (np.cos(2. * tau_1) - 3.) +
-                    (d32 * Az * Ax**2 - d31 * Az**3) * np.cos(3. * tau_1))
-    vy0 = k * Ax * (lmbda * omega * n1 * np.cos(tau_1)) + \
-          (b21 * Ax**2 - b22 * Az**2) * (2. * lmbda * omega * n1 * np.cos(2. * tau_1)) + \
-          (b31 * Ax**3 - b32 * Ax * Az**2) * 3. * lmbda * omega * n1 * np.cos(3. * tau_1)
-
-    richardson = Parameters()
-    richardson.gamma_L = gamma_L
-    richardson.lmbda = lmbda
-    richardson.k = k
-    richardson.Delta = Delta
-    richardson.c2 = c2
-    richardson.c3 = c3
-    richardson.c4 = c4
-    richardson.s1 = s1
-    richardson.s2 = s2
-    richardson.l1 = l1
-    richardson.l2 = l2
-    richardson.a1 = a1
-    richardson.a2 = a2
-    richardson.d1 = d1
-    richardson.d2 = d2
-    richardson.a21 = a21
-    richardson.a22 = a22
-    richardson.a23 = a23
-    richardson.a24 = a24
-    richardson.a31 = a31
-    richardson.a32 = a32
-    richardson.b21 = b21
-    richardson.b22 = b22
-    richardson.b31 = b31
-    richardson.b32 = b32
-    richardson.d21 = d21
-    richardson.d31 = d31
-    richardson.d32 = d32
-    richardson.Ax = Ax
-    richardson.Az = Az
-
-    return np.array([x0, 0, z0, 0, vy0, 0]), richardson, period
